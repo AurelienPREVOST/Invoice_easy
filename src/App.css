@@ -1,0 +1,87 @@
+*{
+  font-family: "Roboto", sans-serif;
+}
+
+#root {
+  width:50%
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-image: linear-gradient(to left bottom, #aec1f6, #91a5e0, #758aca, #596fb5, #3c569f);
+  background-repeat: no-repeat;
+}
+
+.invoice-form {
+  background-color: #3c569f9f;
+  border-radius: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+  box-shadow: 0 1px 2px rgb(66, 66, 66);
+  padding: 2%;
+  button{
+    display: block;
+    width:80%;
+
+  }
+}
+
+h1 {
+  text-align: center;
+}
+
+label {
+  display: block;
+  margin-top: 10px;
+}
+
+input {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  margin-bottom: 15px;
+  box-sizing: border-box;
+}
+
+button {
+  margin: 0 auto;
+  background-color: #4caf50;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+li {
+  margin: 20px 0;
+}
+
+#total {
+  font-weight: bold;
+}
+
+.removebtn {
+  margin-left: 20px;
+  padding: 5px;
+  border-radius: 5px;
+  background: red;
+  color: black;
+
+  &:hover {
+    background-color: rgb(150, 27, 27);
+  }
+}
