@@ -8,6 +8,8 @@ const fakeAddress = '55 Rue du Faubourg Saint-Honoré, 75008 Paris';
 const fakeInvoiceNumber = 'INV-2024021901';
 
 function App() {
+  const [isInvoiceChecked, setIsInvoiceChecked] = useState(true);
+  const [isEstimateChecked, setIsEstimateChecked] = useState(false);
   const [items, setItems] = useState([]);
   const [object, setObject] = useState('');
   const [quantity, setQuantity] = useState('');
@@ -17,7 +19,6 @@ function App() {
   const [totalTVA, setTotalTVA] = useState(0);
   const [totalTTC, setTotalTTC] = useState(0);
   const [previewPDF, setPreviewPDF] = useState(null);
-
 
   const addItem = () => {
     const newItem = {
@@ -77,36 +78,37 @@ function App() {
 
   const generatePDF = () => {
     updateTotal();
-
+  
     const pdf = new jsPDF();
-
+  
     pdf.setFontSize(16);
-    pdf.text('FACTURE', 20, 15);
+    pdf.text(isInvoiceChecked ? 'FACTURE' : 'DEVIS', 20, 15); // Utilisez l'état des checkboxes ici
     pdf.setFontSize(12);
     pdf.text('Facture numero: ' + fakeInvoiceNumber, 20, 25);
-
+  
     pdf.text('Emetteur:', 20, 40);
     pdf.text(fakeAddress, 20, 50);
-
+  
     pdf.addImage(fakeLogo, 'JPEG', 160, 10, 50, 50);
-
+  
     const tableColumn = ['Reference', 'Quantité', 'Prix ht', 'TVA%', 'Sous-total ttc'];
-    
+  
     const tableRows = items.map(item => [item.object, item.quantity, item.price, item.tva, item.subtotal.toFixed(2)]);
-
+  
     pdf.autoTable(tableColumn, tableRows, { startY: 80 });
-
+  
     pdf.text('Total HT: ' + totalHT, 20, pdf.autoTable.previous.finalY + 10);
     pdf.text('TVA: ' + totalTVA, 20, pdf.autoTable.previous.finalY + 18);
     pdf.text('Total TTC: ' + totalTTC, 20, pdf.autoTable.previous.finalY + 26);
-
+  
     pdf.text('SIREN: ' + fakeSiren, 20, pdf.internal.pageSize.height - 20);
     pdf.text('Adresse: ' + fakeAddress, 20, pdf.internal.pageSize.height - 10);
-
+  
     pdf.save(`invoice${fakeInvoiceNumber}.pdf`);
-
+  
     clearForm();
   };
+  
 
 
   const generatePreviewPDF = () => {
@@ -148,7 +150,30 @@ function App() {
   <>
     <div className="invoice-form">
       <h1>Générer une facture</h1>
-
+      <div className="checkboxes">
+        <label>
+        <input
+            type="checkbox"
+            checked={isInvoiceChecked}
+            onChange={() => {
+            setIsInvoiceChecked(true);
+            setIsEstimateChecked(false);
+            }}
+        />
+        Facture
+        </label>
+        <label>
+        <input
+            type="checkbox"
+            checked={isEstimateChecked}
+            onChange={() => {
+            setIsInvoiceChecked(false);
+            setIsEstimateChecked(true);
+            }}
+        />
+        Devis
+        </label>
+      </div>
       <label htmlFor="object">Référence/SKU:</label>
       <input type="text" id="object" value={object} onChange={e => setObject(e.target.value)} required /><br />
 
