@@ -45,15 +45,13 @@ const App = () => {
       alert('Veuillez saisir des valeurs numériques valides.');
       return;
     }
-
     const newItem = {
       object: formData.object,
       quantity: parseFloat(formData.quantity),
       price: parseFloat(formData.price),
       tva: parseFloat(formData.tva),
-      subtotal: parseFloat(formData.price) + (parseFloat(formData.price) * parseFloat(formData.tva) / 100),
+      subtotal: parseFloat(formData.price*formData.quantity) + (parseFloat(formData.price*formData.quantity) * parseFloat(formData.tva) / 100),
     };
-
     setItems([...items, newItem]);
     generatePreviewPDF();
     clearForm();
@@ -63,8 +61,8 @@ const App = () => {
   const updateTotal = () => {
     console.log("passe par updateTotal()")
     if (items.length > 0) {
-      const totalHT = items.reduce((sum, item) => sum + parseFloat(item.price), 0);
-      const totalTVA = items.reduce((sum, item) => sum + (parseFloat(item.price) * parseFloat(item.tva) / 100), 0);
+      const totalHT = items.reduce((sum, item) => sum + parseFloat(item.price*item.quantity), 0);
+      const totalTVA = items.reduce((sum, item) => sum + (parseFloat(item.price*item.quantity) * parseFloat(item.tva) / 100), 0);
       const totalTTC = totalHT + totalTVA;
       setTotals({
         totalHT: totalHT.toFixed(2),
