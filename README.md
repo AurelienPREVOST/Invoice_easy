@@ -1,9 +1,20 @@
-# React + Vite
+## INVOICE EDITOR
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This app is made to create invoice or estimate quickly but be careful it's not conform with the actual comptability legislation.  
+  
+Previsualisation is actually badly render and there is some bug than i have to fix - Work in progress  
 
-Currently, two official plugins are available:
+git clone:
+```bash
+git clone https://github.com/AurelienPREVOST/Invoice_easy.git
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-# Invoice_easy
+package installation
+```bash
+npm install
+```
+
+launching server
+```bash
+npm run dev
+```

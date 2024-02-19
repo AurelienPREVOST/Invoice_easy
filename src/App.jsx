@@ -16,6 +16,8 @@ function App() {
   const [totalHT, setTotalHT] = useState(0);
   const [totalTVA, setTotalTVA] = useState(0);
   const [totalTTC, setTotalTTC] = useState(0);
+  const [previewPDF, setPreviewPDF] = useState(null);
+
 
   const addItem = () => {
     const newItem = {
@@ -27,6 +29,7 @@ function App() {
     };
 
     setItems([...items, newItem]);
+    generatePreviewPDF();
     clearForm();
   };
 
@@ -51,12 +54,10 @@ function App() {
     const isConfirmed = window.confirm("Êtes-vous sûr de vouloir supprimer cet élément ?");
   
     if (isConfirmed) {
-      // Supprimer l'élément
       const updatedItems = [...items];
       updatedItems.splice(index, 1);
       setItems(updatedItems);
   
-      // Mettez à jour le total après la suppression
       updateTotal();
     }
   };
@@ -107,7 +108,44 @@ function App() {
     clearForm();
   };
 
+
+  const generatePreviewPDF = () => {
+    const pdfPreview = new jsPDF();
+
+    generatePDFContent(pdfPreview);
+
+    setPreviewPDF(pdfPreview);
+  };
+
+  const generatePDFContent = (pdf) => {
+    pdf.setFontSize(16);
+    pdf.text('FACTURE', 20, 15);
+    pdf.setFontSize(12);
+    pdf.text('Facture numero: ' + fakeInvoiceNumber, 20, 25);
+
+    pdf.text('Emetteur:', 20, 40);
+    pdf.text(fakeAddress, 20, 50);
+
+    pdf.addImage(fakeLogo, 'JPEG', 160, 10, 50, 50);
+
+    const tableColumn = ['Reference', 'Quantité', 'Prix ht', 'TVA%', 'Sous-total ttc'];
+
+    const tableRows = items.map(item => [item.object, item.quantity, item.price, item.tva, item.subtotal.toFixed(2)]);
+
+    pdf.autoTable(tableColumn, tableRows, { startY: 80 });
+
+    pdf.text('Total HT: ' + totalHT, 20, pdf.autoTable.previous.finalY + 10);
+    pdf.text('TVA: ' + totalTVA, 20, pdf.autoTable.previous.finalY + 18);
+    pdf.text('Total TTC: ' + totalTTC, 20, pdf.autoTable.previous.finalY + 26);
+
+    pdf.text('SIREN: ' + fakeSiren, 20, pdf.internal.pageSize.height - 20);
+    pdf.text('Adresse: ' + fakeAddress, 20, pdf.internal.pageSize.height - 10);
+  };
+
+
+
   return (
+  <>
     <div className="invoice-form">
       <h1>Générer une facture</h1>
 
@@ -147,6 +185,18 @@ function App() {
 
       <button type="button" onClick={generatePDF}>Éditer la facture</button>
     </div>
+    <div className="pdf-preview">
+      <h2>Prévisualisation du PDF</h2>
+      {previewPDF   && (
+      <iframe
+        title="PDF Preview"
+        width="500"
+        height="800"
+        src={previewPDF.output('datauristring')}
+      />
+      )}
+    </div>
+  </>
   );
 }
 

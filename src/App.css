@@ -3,19 +3,23 @@
 }
 
 #root {
-  width:50%
+  display:flex;
+  width:100%;
+  margin:0 auto;
 }
 
 body {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content:center;
   height: 100vh;
   background-image: linear-gradient(to left bottom, #aec1f6, #91a5e0, #758aca, #596fb5, #3c569f);
   background-repeat: no-repeat;
 }
 
 .invoice-form {
+  display:block;
+  width:50%;
   background-color: #3c569f9f;
   border-radius: 20px;
   max-width: 600px;
@@ -83,5 +87,21 @@ li {
 
   &:hover {
     background-color: rgb(150, 27, 27);
+  }
+}
+
+.pdf-preview{
+  width:50%;
+  max-width: 600px;
+  margin: 0 auto;
+  border-radius: 20px;
+  background-color: #3c569f9f;
+  box-shadow: 0 1px 2px rgb(66, 66, 66);
+  h2{
+    text-align: center;
+  }
+  iframe{
+    margin: 0 auto;
+    display: flex;
   }
 }
