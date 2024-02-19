@@ -7,26 +7,51 @@ const fakeSiren = '123456789';
 const fakeAddress = '55 Rue du Faubourg Saint-Honoré, 75008 Paris';
 const fakeInvoiceNumber = 'INV-2024021901';
 
-function App() {
+const initialFormData = {
+  object: '',
+  quantity: '',
+  price: '',
+  tva: '',
+};
+
+const App = () => {
   const [isInvoiceChecked, setIsInvoiceChecked] = useState(true);
   const [isEstimateChecked, setIsEstimateChecked] = useState(false);
   const [items, setItems] = useState([]);
-  const [object, setObject] = useState('');
-  const [quantity, setQuantity] = useState('');
-  const [price, setPrice] = useState('');
-  const [tva, setTva] = useState('');
-  const [totalHT, setTotalHT] = useState(0);
-  const [totalTVA, setTotalTVA] = useState(0);
-  const [totalTTC, setTotalTTC] = useState(0);
-  const [previewPDF, setPreviewPDF] = useState(null);
+  const [formData, setFormData] = useState(initialFormData);
+  const [totals, setTotals] = useState({
+    totalHT: '0.00',
+    totalTVA: '0.00',
+    totalTTC: '0.00',
+  });
+  const [previewPDF, setPreviewPDF] = useState(null);  
 
+
+  // ENSEMBLE DES USE EFFECT
+  useEffect(() => updateTotal(), [items]);
+  useEffect(() => generatePreviewPDF(), [totals, items, isInvoiceChecked]);
+
+
+  // AJOUTER UNE LIGNE
   const addItem = () => {
+    console.log("passe par addItem()")
+    // Vérifier si les champs obligatoires sont remplis
+    if (!formData.object || formData.quantity === '' || formData.price === '' || formData.tva === '') {
+      alert('Veuillez remplir tous les champs obligatoires.');
+      return;
+    }
+    // Vérifier si les valeurs sont numériques
+    if (isNaN(parseFloat(formData.quantity)) || isNaN(parseFloat(formData.price)) || isNaN(parseFloat(formData.tva))) {
+      alert('Veuillez saisir des valeurs numériques valides.');
+      return;
+    }
+
     const newItem = {
-      object,
-      quantity: parseFloat(quantity),
-      price: parseFloat(price),
-      tva: parseFloat(tva),
-      subtotal: parseFloat(price) + (parseFloat(price) * parseFloat(tva) / 100),
+      object: formData.object,
+      quantity: parseFloat(formData.quantity),
+      price: parseFloat(formData.price),
+      tva: parseFloat(formData.tva),
+      subtotal: parseFloat(formData.price) + (parseFloat(formData.price) * parseFloat(formData.tva) / 100),
     };
 
     setItems([...items, newItem]);
@@ -34,195 +59,178 @@ function App() {
     clearForm();
   };
 
+  // MISE A JOUR DU TOTAL DES PRIX 
   const updateTotal = () => {
+    console.log("passe par updateTotal()")
     if (items.length > 0) {
       const totalHT = items.reduce((sum, item) => sum + parseFloat(item.price), 0);
-      setTotalHT(totalHT.toFixed(2));
-
       const totalTVA = items.reduce((sum, item) => sum + (parseFloat(item.price) * parseFloat(item.tva) / 100), 0);
-      setTotalTVA(totalTVA.toFixed(2));
-
       const totalTTC = totalHT + totalTVA;
-      setTotalTTC(totalTTC.toFixed(2));
+      setTotals({
+        totalHT: totalHT.toFixed(2),
+        totalTVA: totalTVA.toFixed(2),
+        totalTTC: totalTTC.toFixed(2),
+      });
     } else {
-      setTotalHT('0.00');
-      setTotalTVA('0.00');
-      setTotalTTC('0.00');
+      setTotals({
+        totalHT: '0.00',
+        totalTVA: '0.00',
+        totalTTC: '0.00',
+      });
     }
   };
 
+  // SUPPRIMER UNE LIGNE
   const removeItem = (index) => {
+    console.log("passe par removeItem()")
     const isConfirmed = window.confirm("Êtes-vous sûr de vouloir supprimer cet élément ?");
-  
     if (isConfirmed) {
       const updatedItems = [...items];
       updatedItems.splice(index, 1);
       setItems(updatedItems);
-  
       updateTotal();
     }
   };
-  
 
-  useEffect(() => {
-    updateTotal();
-    console.log("items=>", items);
-  }, [items]);
-
-  const clearForm = () => {
-    setObject('');
-    setQuantity('');
-    setPrice('');
-    setTva('');
+  // SWITCHé DE FACTURE A DEVIS
+  const toggleInvoiceType = () => {
+    console.log("passe par toggleInvoiceType()")
+    setIsInvoiceChecked(!isInvoiceChecked);
+    setIsEstimateChecked(!isEstimateChecked);
   };
 
-  const generatePDF = () => {
-    updateTotal();
-  
-    const pdf = new jsPDF();
-  
+  // VIDER LE FORMULAIRE (après chaque ligne ajouté)
+  const clearForm = () => {
+    console.log("passe par cleanForm()")
+    setFormData(initialFormData);
+  };
+
+  //Formatage de la date en DD/MM/YYYY
+  const formatDate = (date) => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Les mois commencent à 0
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  // GENERATION PARTAGE ET CONSTITUTION DU PDF (QUE CE SOIT POUR LA PREVIEW OU POUR L'EXTRACTION PDF)
+  const generateCommonContent = (pdf) => {
+    console.log("passe par generateCommonContent()");
     pdf.setFontSize(16);
-    pdf.text(isInvoiceChecked ? 'FACTURE' : 'DEVIS', 20, 15); // Utilisez l'état des checkboxes ici
-    pdf.setFontSize(12);
-    pdf.text('Facture numero: ' + fakeInvoiceNumber, 20, 25);
+    pdf.text(isInvoiceChecked ? 'FACTURE' : 'DEVIS', 20, 15);
   
-    pdf.text('Emetteur:', 20, 40);
+    pdf.setFontSize(12);
+    pdf.text('REF: ' + fakeInvoiceNumber, 20, 25);
+  
+    pdf.setFontSize(12);
+    const formattedDate = formatDate(new Date());
+    pdf.text("Date d'émission: " + formattedDate, 20, 30);
+  
+    pdf.text('Emetteur:', 20, 45);
     pdf.text(fakeAddress, 20, 50);
   
     pdf.addImage(fakeLogo, 'JPEG', 160, 10, 50, 50);
   
     const tableColumn = ['Reference', 'Quantité', 'Prix ht', 'TVA%', 'Sous-total ttc'];
-  
     const tableRows = items.map(item => [item.object, item.quantity, item.price, item.tva, item.subtotal.toFixed(2)]);
   
     pdf.autoTable(tableColumn, tableRows, { startY: 80 });
   
-    pdf.text('Total HT: ' + totalHT, 20, pdf.autoTable.previous.finalY + 10);
-    pdf.text('TVA: ' + totalTVA, 20, pdf.autoTable.previous.finalY + 18);
-    pdf.text('Total TTC: ' + totalTTC, 20, pdf.autoTable.previous.finalY + 26);
+    pdf.text('Total HT: ' + totals.totalHT, 20, pdf.autoTable.previous.finalY + 10);
+    pdf.text('TVA: ' + totals.totalTVA, 20, pdf.autoTable.previous.finalY + 18);
+    pdf.text('Total TTC: ' + totals.totalTTC, 20, pdf.autoTable.previous.finalY + 26);
   
-    pdf.text('SIREN: ' + fakeSiren, 20, pdf.internal.pageSize.height - 20);
-    pdf.text('Adresse: ' + fakeAddress, 20, pdf.internal.pageSize.height - 10);
-  
-    pdf.save(`invoice${fakeInvoiceNumber}.pdf`);
-  
-    clearForm();
+    pdf.text('SIREN: ' + fakeSiren, pdf.internal.pageSize.width / 2, pdf.internal.pageSize.height - 20, { align: 'center' });
+    pdf.text('Adresse: ' + fakeAddress, pdf.internal.pageSize.width / 2, pdf.internal.pageSize.height - 10, { align: 'center' });
   };
   
 
+  // GENERE LE PDF EN FICHIER EXTERNE
+  const generatePDF = () => {
+    console.log("passe par generatePDF()");
+    updateTotal();
+    if (totals.totalTTC <= 0 && totals.totalHT <= 0) {
+      alert('La facture/devis est vide');
+      return;
+    }
+    const pdf = new jsPDF();
+    generateCommonContent(pdf);
+    pdf.save(`invoice${fakeInvoiceNumber}.pdf`);
+    clearForm();
+  };
 
+
+    // GENERATION DE LA PREVISUALISATION
   const generatePreviewPDF = () => {
+    console.log("passe par generatePreviewPDF()")
     const pdfPreview = new jsPDF();
-
-    generatePDFContent(pdfPreview);
-
+    generateCommonContent(pdfPreview);
     setPreviewPDF(pdfPreview);
   };
 
-  const generatePDFContent = (pdf) => {
-    pdf.setFontSize(16);
-    pdf.text('FACTURE', 20, 15);
-    pdf.setFontSize(12);
-    pdf.text('Facture numero: ' + fakeInvoiceNumber, 20, 25);
-
-    pdf.text('Emetteur:', 20, 40);
-    pdf.text(fakeAddress, 20, 50);
-
-    pdf.addImage(fakeLogo, 'JPEG', 160, 10, 50, 50);
-
-    const tableColumn = ['Reference', 'Quantité', 'Prix ht', 'TVA%', 'Sous-total ttc'];
-
-    const tableRows = items.map(item => [item.object, item.quantity, item.price, item.tva, item.subtotal.toFixed(2)]);
-
-    pdf.autoTable(tableColumn, tableRows, { startY: 80 });
-
-    pdf.text('Total HT: ' + totalHT, 20, pdf.autoTable.previous.finalY + 10);
-    pdf.text('TVA: ' + totalTVA, 20, pdf.autoTable.previous.finalY + 18);
-    pdf.text('Total TTC: ' + totalTTC, 20, pdf.autoTable.previous.finalY + 26);
-
-    pdf.text('SIREN: ' + fakeSiren, 20, pdf.internal.pageSize.height - 20);
-    pdf.text('Adresse: ' + fakeAddress, 20, pdf.internal.pageSize.height - 10);
-  };
-
-
 
   return (
-  <>
-    <div className="invoice-form">
-      <h1>Générer une facture</h1>
-      <div className="checkboxes">
-        <label>
-        <input
-            type="checkbox"
-            checked={isInvoiceChecked}
-            onChange={() => {
-            setIsInvoiceChecked(true);
-            setIsEstimateChecked(false);
-            }}
-        />
-        Facture
-        </label>
-        <label>
-        <input
-            type="checkbox"
-            checked={isEstimateChecked}
-            onChange={() => {
-            setIsInvoiceChecked(false);
-            setIsEstimateChecked(true);
-            }}
-        />
-        Devis
-        </label>
-      </div>
-      <label htmlFor="object">Référence/SKU:</label>
-      <input type="text" id="object" value={object} onChange={e => setObject(e.target.value)} required /><br />
-
-      <label htmlFor="quantity">Quantité:</label>
-      <input type="number" id="quantity" min="1" value={quantity} onChange={e => setQuantity(e.target.value)} required /><br />
-
-      <label htmlFor="price">Prix:</label>
-      <input type="number" id="price" min="0.01" step="0.01" value={price} onChange={e => setPrice(e.target.value)} required /><br />
-
-      <label htmlFor="tva">TVA (%):</label>
-      <input type="number" id="tva" min="0" step="0.01" value={tva} onChange={e => setTva(e.target.value)} required /><br />
-
-      <button type="button" onClick={addItem}>Ajouter une ligne</button>
-
-      <ul>
-        {items.map((item, index) => (
-          <li key={index}>
-            {item.object} - Quantité: {item.quantity}, Prix: {item.price}, TVA: {item.tva}%, Sous-total: {item.subtotal.toFixed(2)}
-            <span className="removebtn" type="button" onClick={() => removeItem(index)}>
-              X
-            </span>
-          </li>
+    <>
+      {/* FORMULAIRE DE SAISI*/}
+      <div className="invoice-form">
+        <h1>Générer {isInvoiceChecked ? 'une facture' : 'un devis'}</h1>
+        {/* BOUTON SWITCH */}
+        <div className="switch-container">
+          <label className="switch">
+            <input type="checkbox" checked={isInvoiceChecked} onChange={toggleInvoiceType} />
+            <span className="slider round"></span>
+          </label>
+        </div>
+        {Object.entries(formData).map(([key, value]) => (
+          <div key={key}>
+            <label htmlFor={key}>{key.charAt(0).toUpperCase() + key.slice(1)}:</label>
+            {key === 'quantity' ? (
+              <input type="number" id={key} min="1" value={value} onChange={e => setFormData({ ...formData, [key]: e.target.value })} required />
+            ) : (
+              <input type="text" id={key} value={value} onChange={e => setFormData({ ...formData, [key]: e.target.value })} required />
+            )}
+            <br />
+          </div>
         ))}
-      </ul>
-
-      <label htmlFor="totalHT">Total HT:</label>
-      <input type="text" id="totalHT" value={totalHT} readOnly /><br />
-
-      <label htmlFor="totalTVA">TVA:</label>
-      <input type="text" id="totalTVA" value={totalTVA} readOnly /><br />
-
-      <label htmlFor="totalTTC">Total TTC:</label>
-      <input type="text" id="totalTTC" value={totalTTC} readOnly /><br />
-
-      <button type="button" onClick={generatePDF}>Éditer la facture</button>
-    </div>
-    <div className="pdf-preview">
-      <h2>Prévisualisation du PDF</h2>
-      {previewPDF   && (
-      <iframe
-        title="PDF Preview"
-        width="500"
-        height="800"
-        src={previewPDF.output('datauristring')}
-      />
-      )}
-    </div>
-  </>
+        <button type="button" onClick={addItem}>Ajouter une ligne</button>
+        {/* PREVIEW DES SOUS TOTAUX EN BAS DE FORMULAIRE */}
+        {Object.entries(totals).map(([key, value]) => (
+          <div key={key}>
+            <label htmlFor={key}>{key.charAt(0).toUpperCase() + key.slice(1)}:</label>
+            <input type="text" id={key} value={value} readOnly />
+            <br />
+          </div>
+        ))}
+        <button type="button" onClick={generatePDF}>Éditer la facture</button>
+      </div>
+      {/* PREVISUALISATION INLINE*/}
+      <div id="inline-preview">
+        <h2>Prévisualisation des lignes</h2>
+        <ul>
+          {items.map((item, index) => (
+            <li key={index}>
+              <span className="removebtn" type="button" onClick={() => removeItem(index)}>
+                X
+              </span>
+              {item.object} - Quantité: {item.quantity}, Prix: {item.price}, TVA: {item.tva}%, Sous-total: {item.subtotal.toFixed(2)}
+            </li>
+          ))}
+        </ul>
+      </div>
+      {/* PREVISUALISATION PDF*/}
+      <div className="pdf-preview">
+        <h2>Prévisualisation du PDF</h2>
+        {previewPDF && (
+          <iframe
+            title="PDF Preview"
+            width="500"
+            height="800"
+            src={previewPDF.output('datauristring')}
+          />
+        )}
+      </div>
+    </>
   );
-}
+};
 
 export default App;
